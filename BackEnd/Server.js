@@ -1,68 +1,44 @@
-const express = require("express");
-const mysql = require("mysql2");
-const bodyParser = require("body-parser");
-const cors = require("cors");
+// index.js
+const express = require('express');
+const { Pool } = require('pg');
+require('dotenv').config();
 
 const app = express();
-const port = 8000;
 
-// Middleware to parse JSON bodies
-app.use(bodyParser.json());
-
-// Enable CORS for all routes using the cors middleware
-app.use(cors());
-
-// Create connection to MySQL database
-const db = mysql.createConnection({
-  host: "tmsdb.cnqltqgk9yzu.us-east-1.rds.amazonaws.com",
-  database_name: "postgres",
-  port: 5432,
-  user: "postgres",
-  password: "Vizva@123#123",
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
 });
 
-// Connect to the database
-db.connect((err) => {
-  if (err) throw err;
-  console.log("Connected to the MySQL database.");
-});
-
-// API endpoint to fetch data as per the provided query
-app.get("/fetch-data", (req, res) => {
-  const sql = "select * from task_list_data";
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send("Server Error");
-    } else {
-      res.json(results);
-      //  console.log(results);
-    }
-  });
-});
-
-app.get("/", (req, res) => {
-  if (req.session.role) {
-    return res.json({ valid: true, role: req.session.role });
-  } else {
-    return res.json({ valid: false });
+// Check the database connection
+pool.connect((err, client, release) => {
+  if (err) {
+    console.error('Error connecting to database:', err);
+    return;
   }
+  console.log('Connected to database!');
+  release();
 });
 
-app.post("/fetch-data", (req, res) => {
-  const sql = "select * from leaders where email = ? and password = ?";
-  db.query(sql, [req.body.email, req.body.password], (err, result) => {
-    if (err) return res.json({ Message: "Error inside Server" });
-    if (result.length > 0) {
-      req.session.role = result[0].role;
-      return res.json({ Login: true });
-    } else {
-      return res.json({ Login: false });
+// Define a route to fetch data from the database
+app.get('/data', (req, res) => {
+  const query = 'SELECT * FROM your_table_name'; // Replace 'your_table_name' with your actual table name
+
+  pool.query(query, (error, results) => {
+    if (error) {
+      console.error('Error executing query:', error);
+      res.status(500).json({ error: 'Failed to fetch data' });
+      return;
     }
+    res.json(results.rows); // Send fetched data as JSON response
   });
 });
 
-app.listen(port, () => {
-  console.log(`Server started on http://localhost:${port}`);
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
