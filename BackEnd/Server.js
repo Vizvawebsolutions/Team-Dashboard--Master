@@ -1,48 +1,28 @@
-// server.js
 const express = require('express');
-const { Pool } = require('pg');
-require('dotenv').config();
+const bodyParser = require('body-parser');
+const db = require('./database/Db');
+const router = require('./routers/MainRouter')
 
 const app = express();
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
-  ssl: {
-    // SSL options if required (depends on your RDS configuration)
-    rejectUnauthorized: false // Use this only if you face certificate verification issues
-  }
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+
+app.use(router)
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
-// Check the database connection
-pool.connect((err, client, release) => {
+// Handle database connection
+db.connect((err, client, release) => {
   if (err) {
     console.error('Error connecting to database:', err);
     return;
   }
   console.log('Connected to database!');
   release();
-});
-
-// Define a route to fetch data from the database
-app.get('/data', (req, res) => {
-  const query = 'SELECT * FROM your_table_name'; // Replace 'your_table_name' with your actual table name
-
-  pool.query(query, (error, results) => {
-    if (error) {
-      console.error('Error executing query:', error);
-      res.status(500).json({ error: 'Failed to fetch data' });
-      return;
-    }
-    res.json(results.rows); // Send fetched data as JSON response
-  });
-});
-
-// Start the server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 });
