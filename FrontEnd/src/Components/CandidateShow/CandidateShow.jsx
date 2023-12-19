@@ -27,10 +27,9 @@ const TaskList = () => {
 
 
   useEffect(() => {
-    axios.get('http://localhost:8000/fetch-data')
+    axios.get('http://localhost:3000/fetch-data')
       .then((response) => {
         setData(response.data);
-
 
         // Extract unique assignees
         const uniqueAssignees = [...new Set(response.data.map(task => task.assignees))];
@@ -51,7 +50,7 @@ const TaskList = () => {
     const newAssignee = event.target.value;
 
     // Call the backend to update the task assignment
-    axios.put(`http://localhost:8000/update-assignee/${taskId}`, {
+    axios.put(`http://localhost:3000/update-assignee/${taskId}`, {
       assignee: newAssignee
     })
       .then(response => {
@@ -96,7 +95,7 @@ const TaskList = () => {
 
     {
       field: "name",
-      headerName: "Client Name",
+      headerName: "Name",
       flex: 1,
       cellClassName: "name-column--cell",
     },

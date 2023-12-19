@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Box, Typography, useTheme } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridToolbar  } from "@mui/x-data-grid";
 
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
@@ -10,93 +10,42 @@ import BookOnlineIcon from "@mui/icons-material/BookOnline";
 import OfflineShareIcon from "@mui/icons-material/OfflineShare";
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom";
 
-//importing file & components
 
+//importing file & components
+import Header from "../Global/Header";
 import { tokens } from "../../Theme";
 
-import { mockDataTeam } from "../../Data/DataShow";
-
-import Header from "../Global/Header";
-import PopUpShow from "../PopUp/PopUp";
-
 const TeamShow = () => {
-
-  // for popup task details
-  const [typoPopUp, setTypoPopup] = useState(false);
-
-  //To find the selectede task
-
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
-  const [selectedRow, setSelectedRow] = useState(null);
-
-
-  // const [candidates, setCandidates] = useState([]);
- 
-
-  // useEffect(() => {
-  
-  //   // Fetch data from the backend API
-  //   fetch('http://localhost:8081/api/candidates')
-  //     .then(response => {
-  //       if (!response.ok) {
-  //         throw new Error('Network response was not ok');
-  //       }
-  //       return response.json();
-  //     })
-  //     .then(data => {
-  //       setCandidates(data);
-  //     })
-  //     .catch(error => {
-  //       console.error('Error fetching data:', error);
-  //     });
-  
-  // }, []);
-  
-
-  const bull = (
-    <Box
-      component="span"
-      sx={{ display: "inline-block", mx: "2px", transform: "scale(0.8)" }}
-    >
-      •
-    </Box>
-  );
-
-  const handleTypographyClick = (taskId) => {
-    setSelectedTaskId(taskId);
-  };
-
-  const selectedTask = mockDataTeam.find((task) => task.id === selectedTaskId);
-
+  const [users, setUsers] = useState([]); //for user changes
   const theme = useTheme();
   
   const colors = tokens(theme.palette.mode);
 
   const columns = [
     {
-      field: "name",
+      field: "user_name",
       headerName: "Name",
       flex: 1,
       cellClassName: "name-column--cell",
-      renderCell: (params) => (
-        <Typography
-          onClick={() => {
-            setTypoPopup(true);
-            handleTypographyClick(params.row.id);
-          }}
-          color={colors.greenAccent[500]}
-        >
-          {params.value}
-        </Typography>
-      ),
+      // renderCell: (params) => (
+      //   <Typography
+      //     onClick={() => {
+      //       setTypoPopup(true);
+      //       handleTypographyClick(params.row.id);
+      //     }}
+      //     color={colors.greenAccent[500]}
+      //   >
+      //     {params.value}
+      //   </Typography>
+      // ),
     },
     {
-      field: "email",
+      field: "user_email",
       headerName: "Email",
       flex: 1,
     },
     {
-      field: "phone",
+      field: "user_phone",
       headerName: "Phone Number",
       flex: 1,
     },
@@ -105,7 +54,7 @@ const TeamShow = () => {
       field: "access",
       headerName: "Role",
       flex: 1,
-      renderCell: ({ row: { access } }) => {
+      renderCell: ({ row: { admin_flag } }) => {
         return (
           <Box
             width="60%"
@@ -114,19 +63,17 @@ const TeamShow = () => {
             display="flex"
             justifyContent="center"
             backgroundColor={
-              access === "admin"
-                ? colors.greenAccent[600]
-                : access === "manager"
-                ? colors.greenAccent[700]
-                : colors.greenAccent[700]
+              admin_flag ? colors.greenAccent[600] : colors.greenAccent[700]
             }
             borderRadius="4px"
           >
-            {access === "admin" && <AdminPanelSettingsOutlinedIcon />}
-            {access === "manager" && <SecurityOutlinedIcon />}
-            {access === "user" && <LockOpenOutlinedIcon />}
+            {admin_flag ? (
+              <AdminPanelSettingsOutlinedIcon />
+            ) : (
+              <LockOpenOutlinedIcon />
+            )}
             <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
-              {access}
+              {admin_flag ? "Admin" : "User"}
             </Typography>
           </Box>
         );
@@ -144,6 +91,20 @@ const TeamShow = () => {
       headerName: "Status",
       flex: 1,
       renderCell: ({ row: { status } }) => {
+        let backgroundColor = colors.yellowAccent[700]; // Default color for 'in_meeting'
+        let statusIcon = <MeetingRoomIcon />; // Default icon for 'in_meeting'
+    
+        if (status === "online") {
+          backgroundColor = colors.greenAccent[700];
+          statusIcon = <BookOnlineIcon />;
+        } else if (status === "in_meeting") {
+          backgroundColor = colors.yellowAccent[700];
+          statusIcon = <OfflineShareIcon />;
+        }else if (status === "offline") {
+          backgroundColor = colors.redAccent[700];
+          statusIcon = <OfflineShareIcon />;
+        }
+    
         return (
           <Box
             width="60%"
@@ -151,18 +112,10 @@ const TeamShow = () => {
             p="5px"
             display="flex"
             justifyContent="center"
-            backgroundColor={
-              status === "active"
-                ? colors.greenAccent[700]
-                : status === "offline"
-                ? colors.redAccent[700]
-                : colors.yellowAccent[700]
-            }
+            backgroundColor={backgroundColor}
             borderRadius="4px"
           >
-            {status === "active" && <BookOnlineIcon />}
-            {status === "offline" && <OfflineShareIcon />}
-            {status === "in meeting" && <MeetingRoomIcon />}
+            {statusIcon}
             <Typography color={colors.grey[100]} sx={{ ml: "5px" }}>
               {status}
             </Typography>
@@ -170,7 +123,34 @@ const TeamShow = () => {
         );
       },
     },
+    
   ];
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/user/list'); // Modify the URL to match your backend
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+  
+        // Map through the received data and add an 'id' property to each row
+        const usersWithId = data.data.map((user, index) => ({
+          id: user.user_id || index, // Assuming 'user_id' is the unique identifier for a user
+          ...user,
+        }));
+  
+        setUsers(usersWithId); // Set the modified users data with 'id' to state
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        // Handle errors as needed
+      }
+    };
+  
+    fetchUsers();
+  }, []);
+
 
   return (
     <Box m="20px">
@@ -204,16 +184,15 @@ const TeamShow = () => {
           },
         }}
       >
-        <DataGrid
-          rows={mockDataTeam}
+          <DataGrid
+          rows={users} // Use 'users' state for rows instead of 'mockDataContacts'
           columns={columns}
-          onRowClick={(params) => setSelectedRow(params.row.id)}
-          checkboxSelection={false}
+          components={{ Toolbar: GridToolbar }}
         />
 
         {/* for PopUp card view after clickon task_bio */}
 
-        <PopUpShow
+        {/* <PopUpShow
           trigger={typoPopUp}
           setTrigger={setTypoPopup}
           rows={selectedRow}
@@ -243,7 +222,7 @@ const TeamShow = () => {
               </div>
             )}
           </>
-        </PopUpShow>
+        </PopUpShow> */}
       </Box>
     </Box>
   );
