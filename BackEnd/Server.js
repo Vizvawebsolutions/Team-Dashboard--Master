@@ -1,14 +1,20 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const db = require('./database/Db');
-const router = require('./routers/MainRouter')
-
+const router = require('./routers/MainRouter');
+const cors = require ('cors');
 const app = express();
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+
+//adding cors
+app.use(cors({
+  origin: '*',
+  methods: ['GET','POST','DELETE','UPDATE','PUT','PATCH']
+}));
 
 app.use(router)
 
